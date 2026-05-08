@@ -60,9 +60,12 @@ header{background:var(--brown);color:var(--cream);padding:0 2rem;display:flex;al
 .ff input.auto-filled{border-color:var(--amber);background:#fffbf0;}
 .btn{padding:0.65rem 1.4rem;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;}
 .btn-compra{background:var(--red-light);color:white;}.btn-venta{background:var(--green);color:white;}.btn-deposito{background:#7B61FF;color:white;}.btn-primary{background:var(--brown);color:white;}
-.btn-sm{padding:0.28rem 0.65rem;font-size:0.78rem;border-radius:6px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;}
-.btn-edit{background:var(--amber-pale);color:var(--amber);border:1px solid var(--border);}
-.btn-del{background:#fff0ee;color:var(--red-light);border:1px solid var(--border);}
+.btn-sm{padding:0.35rem 0.75rem;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;}
+.btn-edit{background:var(--amber-pale);color:var(--amber);border:1px solid var(--amber);}
+.btn-edit:hover{background:#ffe8a0;}
+.btn-del{background:#fff0ee;color:var(--red-light);border:1px solid var(--red-light);}
+.btn-del:hover{background:#ffd9d5;}
+.acciones-wrap{display:flex;gap:6px;align-items:center;}
 .btn-export{background:var(--green);color:white;padding:0.45rem 0.9rem;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;}
 .btn-export-pdf{background:var(--red-light);color:white;padding:0.45rem 0.9rem;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;}
 .table-card{background:white;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:1.5rem;}
@@ -73,9 +76,11 @@ header{background:var(--brown);color:var(--cream);padding:0 2rem;display:flex;al
 .search-input:focus{border-color:var(--amber);}
 table{width:100%;border-collapse:collapse;}
 thead th{padding:0.75rem 1.1rem;text-align:left;font-size:0.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;background:#FAFAF8;border-bottom:1px solid var(--border);}
+thead th:last-child{min-width:110px;}
 tbody tr{border-bottom:1px solid #F5EDE0;}
 tbody tr:hover{background:var(--amber-pale);}
 td{padding:0.8rem 1.1rem;font-size:0.85rem;}
+td:last-child{white-space:nowrap;min-width:110px;}
 .badge{display:inline-block;padding:0.22rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:600;}
 .badge-compra{background:#FEE8E6;color:var(--red);}.badge-venta{background:#E3F5EC;color:var(--green);}.badge-deposito{background:#EEE8FF;color:#7B61FF;}
 .badge-pagado{background:#E3F5EC;color:var(--green);}.badge-parcial{background:#FFF3D6;color:var(--amber);}.badge-pendiente{background:#FEE8E6;color:var(--red);}
@@ -529,9 +534,9 @@ function renderComprasFiltradas(datos){
     <td data-label="P.Unit">${fS(c.precio)}</td>
     <td data-label="Total" class="amt-c">${fS(c.total)}</td>
     <td data-label="Proveedor">${c.proveedor||'—'}</td>
-    <td data-label="Acciones"><div style="display:flex;gap:4px">
-      <button class="btn-sm btn-edit" onclick="editarReg('compra','${c.id}')">✏️</button>
-      <button class="btn-sm btn-del" onclick="eliminarReg('compra','${c.id}')">🗑️</button>
+    <td data-label="Acciones"><div class="acciones-wrap">
+      <button class="btn-sm btn-edit" onclick="editarReg('compra','${c.id}')">✏️ Editar</button>
+      <button class="btn-sm btn-del" onclick="eliminarReg('compra','${c.id}')">🗑️ Borrar</button>
     </div></td></tr>`).join('');
 }
 
@@ -555,9 +560,9 @@ function renderVentasFiltradas(datos){
     <td data-label="Cliente">${nomCli(v.cliente_id)}</td>
     <td data-label="Sede">${v.sede_id?nomSede(v.sede_id):'—'}</td>
     <td data-label="Estado">${estadoPago(v.total,v.pagado)}</td>
-    <td data-label="Acciones"><div style="display:flex;gap:4px">
-      <button class="btn-sm btn-edit" onclick="editarReg('venta','${v.id}')">✏️</button>
-      <button class="btn-sm btn-del" onclick="eliminarReg('venta','${v.id}')">🗑️</button>
+    <td data-label="Acciones"><div class="acciones-wrap">
+      <button class="btn-sm btn-edit" onclick="editarReg('venta','${v.id}')">✏️ Editar</button>
+      <button class="btn-sm btn-del" onclick="eliminarReg('venta','${v.id}')">🗑️ Borrar</button>
     </div></td></tr>`).join('');
 }
 
