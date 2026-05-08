@@ -187,16 +187,17 @@ td{padding:0.8rem 1.1rem;font-size:0.85rem;}
       <div class="form-card">
         <div class="form-title">💰 Registrar Venta</div>
         <div class="form-grid">
-          <div class="ff"><label>Producto</label><select id="v-producto" onchange="cargarUltimoPrecio(this.value)"><option value="">Seleccionar...</option></select></div>
-          <div class="ff"><label>Descripción</label><input type="text" id="v-descripcion" placeholder="Detalle"></div>
-          <div class="ff"><label>Cantidad (unidades)</label><input type="number" id="v-cantidad" placeholder="0" min="0"></div>
-          <div class="ff"><label>Peso (kg)</label><input type="number" id="v-peso" placeholder="0.00" step="0.01"></div>
-          <div class="ff"><label>Unidad</label><select id="v-unidad"><option value="">Seleccionar...</option></select></div>
-          <div class="ff"><label>Precio unitario (S/.)</label><input type="number" id="v-precio" placeholder="0.00" step="0.01" oninput="this.classList.remove('auto-filled')"></div>
+          <div class="ff"><label>Fecha</label><input type="date" id="v-fecha"></div>
           <div class="ff"><label>Cliente</label><select id="v-cliente" onchange="cargarSedesCliente(this.value,'v-sede')"><option value="">Sin cliente</option></select></div>
           <div class="ff"><label>Sede</label><select id="v-sede"><option value="">Sin sede</option></select></div>
+          <div class="ff"><label>Producto</label><select id="v-producto" onchange="cargarUltimoPrecio(this.value)"><option value="">Seleccionar...</option></select></div>
+          <div class="ff"><label>Descripción</label><input type="text" id="v-descripcion" placeholder="Detalle"></div>
+          <div class="ff"><label>Unidad</label><select id="v-unidad"><option value="">Seleccionar...</option></select></div>
+          <div class="ff"><label>Cantidad (unidades)</label><input type="number" id="v-cantidad" placeholder="0" min="0" oninput="calcularMonto()"></div>
+          <div class="ff"><label>Peso (kg)</label><input type="number" id="v-peso" placeholder="0.00" step="0.01" oninput="calcularMonto()"></div>
+          <div class="ff"><label>Precio unitario (S/.)</label><input type="number" id="v-precio" placeholder="0.00" step="0.01" oninput="this.classList.remove('auto-filled');calcularMonto()"></div>
+          <div class="ff"><label>Monto (S/.)</label><input type="number" id="v-monto" placeholder="0.00" readonly style="background:#f0f0f0;cursor:not-allowed;color:var(--green);font-weight:600;"></div>
           <div class="ff"><label>Pagado ahora (S/.)</label><input type="number" id="v-pagado" placeholder="0.00" step="0.01" value="0"></div>
-          <div class="ff"><label>Fecha</label><input type="date" id="v-fecha"></div>
           <div class="ff"><label>Notas</label><input type="text" id="v-notas" placeholder="Opcional"></div>
         </div>
         <button class="btn btn-venta" onclick="registrarVenta()">+ Registrar Venta</button>
@@ -435,7 +436,15 @@ async function cargarUltimoPrecio(producto){
     const input=document.getElementById('v-precio');
     input.value=precio.ultimo_precio;
     input.classList.add('auto-filled');
+    calcularMonto();
   }
+}
+
+function calcularMonto(){
+  const peso=parseFloat(document.getElementById('v-peso').value)||0;
+  const precio=parseFloat(document.getElementById('v-precio').value)||0;
+  const monto=peso*precio;
+  document.getElementById('v-monto').value=monto.toFixed(2);
 }
 
 function mostrarDeudaCliente(clienteId){
@@ -498,13 +507,14 @@ async function registrarVenta(){
   const pagado=parseFloat(document.getElementById('v-pagado').value)||0;
   const fecha=document.getElementById('v-fecha').value,notas=document.getElementById('v-notas').value;
   if(!prod||!precio||!fecha){showToast('⚠️ Completa producto, precio y fecha');return;}
-  const total=cant*precio,saldo=total-pagado;
+  const total=peso*precio;
+  const saldo=total-pagado;
   const{data,error}=await sb.from('ventas').insert([{fecha,producto:prod,descripcion:desc,cantidad:cant,peso,unidad,precio,total,pagado,saldo,cliente_id:clienteId,sede_id:sedeId,notas}]).select();
   if(error){showToast('❌ Error: '+error.message);return;}
   ventasData.unshift(data[0]);
   await guardarPrecioProducto(prod,precio);
   renderVentas('');actualizarResumen();showToast('✅ Venta registrada');
-  ['v-producto','v-descripcion','v-cantidad','v-peso','v-precio','v-notas'].forEach(id=>document.getElementById(id).value='');
+  ['v-producto','v-descripcion','v-cantidad','v-peso','v-precio','v-monto','v-notas'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('v-pagado').value='0';document.getElementById('v-fecha').value=hoy;
   document.getElementById('v-sede').innerHTML='<option value="">Sin sede</option>';
 }
