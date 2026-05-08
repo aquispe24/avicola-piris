@@ -135,6 +135,14 @@ td{padding:0.8rem 1.1rem;font-size:0.85rem;}
     </div>
   </header>
   <div class="container">
+    <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:1rem 1.4rem;margin-bottom:1.2rem;display:flex;flex-wrap:wrap;gap:0.8rem;align-items:flex-end;">
+      <div class="ff"><label>📅 Desde</label><input type="date" id="kpi-desde" onchange="actualizarResumen()"></div>
+      <div class="ff"><label>Hasta</label><input type="date" id="kpi-hasta" onchange="actualizarResumen()"></div>
+      <button class="btn btn-primary" style="padding:0.5rem 1rem;font-size:0.82rem;" onclick="resetKpiFecha()">Hoy</button>
+      <button class="btn" style="padding:0.5rem 1rem;font-size:0.82rem;background:var(--amber);color:white;" onclick="setKpiRango(7)">7 días</button>
+      <button class="btn" style="padding:0.5rem 1rem;font-size:0.82rem;background:var(--amber-light);color:white;" onclick="setKpiRango(30)">30 días</button>
+      <button class="btn" style="padding:0.5rem 1rem;font-size:0.82rem;background:var(--gray);color:white;" onclick="setKpiRango(null)">Todo</button>
+    </div>
     <div class="summary-grid">
       <div class="summary-card c1"><div class="card-label">Total Compras</div><div class="card-value neg" id="sumCompras">S/. 0.00</div><div class="card-sub" id="nCompras">0 registros</div></div>
       <div class="summary-card c2"><div class="card-label">Total Ventas</div><div class="card-value pos" id="sumVentas">S/. 0.00</div><div class="card-sub" id="nVentas">0 registros</div></div>
@@ -334,6 +342,8 @@ const sb=supabase.createClient(SURL,SKEY);
 const hoy=new Date().toISOString().split('T')[0];
 const hace15=new Date(Date.now()-15*24*60*60*1000).toISOString().split('T')[0];
 ['c-fecha','v-fecha','d-fecha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=hoy;});
+document.getElementById('kpi-desde').value=hoy;
+document.getElementById('kpi-hasta').value=hoy;
 document.getElementById('r-desde').value=hace15;
 document.getElementById('r-hasta').value=hoy;
 
@@ -457,20 +467,47 @@ function mostrarDeudaCliente(clienteId){
   info.innerHTML=`<strong>Deuda actual del cliente:</strong> ${fS(totalDeuda)} — ${ventasPendientes.length} venta(s) pendiente(s)`;
 }
 
+function resetKpiFecha(){
+  document.getElementById('kpi-desde').value=hoy;
+  document.getElementById('kpi-hasta').value=hoy;
+  actualizarResumen();
+}
+function setKpiRango(dias){
+  if(dias===null){
+    document.getElementById('kpi-desde').value='';
+    document.getElementById('kpi-hasta').value='';
+  } else {
+    const desde=new Date(Date.now()-dias*24*60*60*1000).toISOString().split('T')[0];
+    document.getElementById('kpi-desde').value=desde;
+    document.getElementById('kpi-hasta').value=hoy;
+  }
+  actualizarResumen();
+}
+
 function actualizarResumen(){
-  const tc=comprasData.reduce((s,c)=>s+Number(c.total),0);
-  const tv=ventasData.reduce((s,v)=>s+Number(v.total),0);
-  const tp=ventasData.reduce((s,v)=>s+Number(v.pagado||0),0);
-  const td=depositosData.reduce((s,d)=>s+Number(d.monto),0);
+  const desde=document.getElementById('kpi-desde')?document.getElementById('kpi-desde').value:'';
+  const hasta=document.getElementById('kpi-hasta')?document.getElementById('kpi-hasta').value:'';
+  const filtrar=r=>{
+    if(desde&&r.fecha<desde)return false;
+    if(hasta&&r.fecha>hasta)return false;
+    return true;
+  };
+  const comprasFilt=comprasData.filter(filtrar);
+  const ventasFilt=ventasData.filter(filtrar);
+  const depositosFilt=depositosData.filter(filtrar);
+  const tc=comprasFilt.reduce((s,c)=>s+Number(c.total),0);
+  const tv=ventasFilt.reduce((s,v)=>s+Number(v.total),0);
+  const tp=ventasFilt.reduce((s,v)=>s+Number(v.pagado||0),0);
+  const td=depositosFilt.reduce((s,d)=>s+Number(d.monto),0);
   const porCobrar=Math.max(0,tv-(tp+td));
   document.getElementById('sumCompras').textContent=fS(tc);
   document.getElementById('sumVentas').textContent=fS(tv);
   document.getElementById('sumBalance').textContent=fS(tv-tc);
   document.getElementById('sumBalance').className='card-value '+(tv-tc>=0?'pos':'neg');
   document.getElementById('sumPorCobrar').textContent=fS(porCobrar);
-  document.getElementById('nCompras').textContent=comprasData.length+' registros';
-  document.getElementById('nVentas').textContent=ventasData.length+' registros';
-  document.getElementById('sumMovimientos').textContent=comprasData.length+ventasData.length+depositosData.length;
+  document.getElementById('nCompras').textContent=comprasFilt.length+' registros';
+  document.getElementById('nVentas').textContent=ventasFilt.length+' registros';
+  document.getElementById('sumMovimientos').textContent=comprasFilt.length+ventasFilt.length+depositosFilt.length;
 }
 
 async function guardarPrecioProducto(producto,precio){
