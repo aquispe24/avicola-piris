@@ -508,6 +508,57 @@ function actualizarResumen(){
   document.getElementById('nCompras').textContent=comprasFilt.length+' registros';
   document.getElementById('nVentas').textContent=ventasFilt.length+' registros';
   document.getElementById('sumMovimientos').textContent=comprasFilt.length+ventasFilt.length+depositosFilt.length;
+  // Actualizar tablas con el mismo filtro de fecha
+  renderComprasFiltradas(comprasFilt);
+  renderVentasFiltradas(ventasFilt);
+}
+
+function renderComprasFiltradas(datos){
+  const busqueda=document.querySelector('#panel-compras .search-input');
+  const f=busqueda?busqueda.value:'';
+  const filtrados=datos.filter(c=>!f||JSON.stringify(c).toLowerCase().includes(f.toLowerCase()));
+  const tbody=document.getElementById('tbody-compras');
+  if(!filtrados.length){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="icon">🛒</div><p>Sin compras en este período</p></div></td></tr>';return;}
+  tbody.innerHTML=filtrados.map(c=>`<tr>
+    <td data-label="ID"><span class="id-code">${shortId(c.id)}</span></td>
+    <td data-label="Fecha">${c.fecha}</td>
+    <td data-label="Producto"><strong>${c.producto}</strong>${c.descripcion?'<br><small style="color:var(--gray)">'+c.descripcion+'</small>':''}</td>
+    <td data-label="Cant.">${c.cantidad||0}</td>
+    <td data-label="Peso">${c.peso?c.peso+' kg':'—'}</td>
+    <td data-label="Unidad">${c.unidad||'—'}</td>
+    <td data-label="P.Unit">${fS(c.precio)}</td>
+    <td data-label="Total" class="amt-c">${fS(c.total)}</td>
+    <td data-label="Proveedor">${c.proveedor||'—'}</td>
+    <td data-label="Acciones"><div style="display:flex;gap:4px">
+      <button class="btn-sm btn-edit" onclick="editarReg('compra','${c.id}')">✏️</button>
+      <button class="btn-sm btn-del" onclick="eliminarReg('compra','${c.id}')">🗑️</button>
+    </div></td></tr>`).join('');
+}
+
+function renderVentasFiltradas(datos){
+  const busqueda=document.querySelector('#panel-ventas .search-input');
+  const f=busqueda?busqueda.value:'';
+  const filtrados=datos.filter(v=>!f||JSON.stringify(v).toLowerCase().includes(f.toLowerCase())||nomCli(v.cliente_id).toLowerCase().includes(f.toLowerCase()));
+  const tbody=document.getElementById('tbody-ventas');
+  if(!filtrados.length){tbody.innerHTML='<tr><td colspan="14"><div class="empty-state"><div class="icon">💰</div><p>Sin ventas en este período</p></div></td></tr>';return;}
+  tbody.innerHTML=filtrados.map(v=>`<tr>
+    <td data-label="ID"><span class="id-code">${shortId(v.id)}</span></td>
+    <td data-label="Fecha">${v.fecha}</td>
+    <td data-label="Producto"><strong>${v.producto}</strong></td>
+    <td data-label="Cant.">${v.cantidad||0}</td>
+    <td data-label="Peso">${v.peso?v.peso+' kg':'—'}</td>
+    <td data-label="Unidad">${v.unidad||'—'}</td>
+    <td data-label="Precio">${fS(v.precio)}</td>
+    <td data-label="Total" class="amt-v">${fS(v.total)}</td>
+    <td data-label="Pagado">${fS(v.pagado)}</td>
+    <td data-label="Saldo" class="${parseFloat(v.saldo||0)>0?'amt-c':'amt-v'}">${fS(v.saldo)}</td>
+    <td data-label="Cliente">${nomCli(v.cliente_id)}</td>
+    <td data-label="Sede">${v.sede_id?nomSede(v.sede_id):'—'}</td>
+    <td data-label="Estado">${estadoPago(v.total,v.pagado)}</td>
+    <td data-label="Acciones"><div style="display:flex;gap:4px">
+      <button class="btn-sm btn-edit" onclick="editarReg('venta','${v.id}')">✏️</button>
+      <button class="btn-sm btn-del" onclick="eliminarReg('venta','${v.id}')">🗑️</button>
+    </div></td></tr>`).join('');
 }
 
 async function guardarPrecioProducto(producto,precio){
@@ -587,47 +638,27 @@ async function registrarDeposito(){
 }
 
 function renderCompras(f){
-  const tbody=document.getElementById('tbody-compras');
-  const datos=comprasData.filter(c=>!f||JSON.stringify(c).toLowerCase().includes(f.toLowerCase()));
-  if(!datos.length){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="icon">🛒</div><p>Sin compras</p></div></td></tr>';return;}
-  tbody.innerHTML=datos.map(c=>`<tr>
-    <td data-label="ID"><span class="id-code">${shortId(c.id)}</span></td>
-    <td data-label="Fecha">${c.fecha}</td>
-    <td data-label="Producto"><strong>${c.producto}</strong>${c.descripcion?'<br><small style="color:var(--gray)">'+c.descripcion+'</small>':''}</td>
-    <td data-label="Cant.">${c.cantidad||0}</td>
-    <td data-label="Peso">${c.peso?c.peso+' kg':'—'}</td>
-    <td data-label="Unidad">${c.unidad||'—'}</td>
-    <td data-label="P.Unit">${fS(c.precio)}</td>
-    <td data-label="Total" class="amt-c">${fS(c.total)}</td>
-    <td data-label="Proveedor">${c.proveedor||'—'}</td>
-    <td data-label="Acciones"><div style="display:flex;gap:4px">
-      <button class="btn-sm btn-edit" onclick="editarReg('compra','${c.id}')">✏️</button>
-      <button class="btn-sm btn-del" onclick="eliminarReg('compra','${c.id}')">🗑️</button>
-    </div></td></tr>`).join('');
+  const desde=document.getElementById('kpi-desde')?document.getElementById('kpi-desde').value:'';
+  const hasta=document.getElementById('kpi-hasta')?document.getElementById('kpi-hasta').value:'';
+  let datos=comprasData.filter(c=>{
+    if(desde&&c.fecha<desde)return false;
+    if(hasta&&c.fecha>hasta)return false;
+    if(f&&!JSON.stringify(c).toLowerCase().includes(f.toLowerCase()))return false;
+    return true;
+  });
+  renderComprasFiltradas(datos);
 }
 
 function renderVentas(f){
-  const tbody=document.getElementById('tbody-ventas');
-  const datos=ventasData.filter(v=>!f||JSON.stringify(v).toLowerCase().includes(f.toLowerCase())||nomCli(v.cliente_id).toLowerCase().includes(f.toLowerCase()));
-  if(!datos.length){tbody.innerHTML='<tr><td colspan="14"><div class="empty-state"><div class="icon">💰</div><p>Sin ventas</p></div></td></tr>';return;}
-  tbody.innerHTML=datos.map(v=>`<tr>
-    <td data-label="ID"><span class="id-code">${shortId(v.id)}</span></td>
-    <td data-label="Fecha">${v.fecha}</td>
-    <td data-label="Producto"><strong>${v.producto}</strong></td>
-    <td data-label="Cant.">${v.cantidad||0}</td>
-    <td data-label="Peso">${v.peso?v.peso+' kg':'—'}</td>
-    <td data-label="Unidad">${v.unidad||'—'}</td>
-    <td data-label="Precio">${fS(v.precio)}</td>
-    <td data-label="Total" class="amt-v">${fS(v.total)}</td>
-    <td data-label="Pagado">${fS(v.pagado)}</td>
-    <td data-label="Saldo" class="${parseFloat(v.saldo||0)>0?'amt-c':'amt-v'}">${fS(v.saldo)}</td>
-    <td data-label="Cliente">${nomCli(v.cliente_id)}</td>
-    <td data-label="Sede">${v.sede_id?nomSede(v.sede_id):'—'}</td>
-    <td data-label="Estado">${estadoPago(v.total,v.pagado)}</td>
-    <td data-label="Acciones"><div style="display:flex;gap:4px">
-      <button class="btn-sm btn-edit" onclick="editarReg('venta','${v.id}')">✏️</button>
-      <button class="btn-sm btn-del" onclick="eliminarReg('venta','${v.id}')">🗑️</button>
-    </div></td></tr>`).join('');
+  const desde=document.getElementById('kpi-desde')?document.getElementById('kpi-desde').value:'';
+  const hasta=document.getElementById('kpi-hasta')?document.getElementById('kpi-hasta').value:'';
+  let datos=ventasData.filter(v=>{
+    if(desde&&v.fecha<desde)return false;
+    if(hasta&&v.fecha>hasta)return false;
+    if(f&&!JSON.stringify(v).toLowerCase().includes(f.toLowerCase())&&!nomCli(v.cliente_id).toLowerCase().includes(f.toLowerCase()))return false;
+    return true;
+  });
+  renderVentasFiltradas(datos);
 }
 
 function renderDepositos(f){
